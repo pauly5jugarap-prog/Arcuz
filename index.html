@@ -6,36 +6,34 @@
     <title>Arcuz Mobile Fix</title>
     <script src="https://unpkg.com/@ruffle-rs/ruffle"></script>
     <style>
-        * { box-sizing: border-box; touch-action: none; -webkit-user-select: none; }
-        body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: #000; overflow: hidden; }
-        #game-container { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
-        #ruffle-player { width: 100%; height: 100%; }
+        * { box-sizing: border-box; touch-action: none; -webkit-user-select: none; user-select: none; }
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: #000; overflow: hidden; position: fixed; }
+        #ruffle-player { width: 100%; height: 100%; position: absolute; top: 0; left: 0; }
 
         /* Controls */
         .ui-layer { position: fixed; bottom: 20px; width: 100%; display: flex; justify-content: space-between; padding: 0 20px; pointer-events: none; z-index: 999; }
         .btn { 
-            width: 60px; height: 60px; background: rgba(255,255,255,0.2); 
+            width: 65px; height: 65px; background: rgba(255,255,255,0.2); 
             border: 2px solid #fff; border-radius: 50%; display: flex; 
             align-items: center; justify-content: center; color: #fff; 
-            pointer-events: auto; font-weight: bold;
+            pointer-events: auto; font-weight: bold; font-size: 20px;
         }
-        .btn:active { background: rgba(255,255,255,0.6); }
+        .btn:active { background: rgba(255,255,255,0.6); transform: scale(1.1); }
         .dpad { display: grid; grid-template-columns: repeat(3, 65px); gap: 5px; }
-        .actions { display: grid; grid-template-columns: repeat(2, 70px); gap: 10px; align-items: end; }
+        .actions { display: flex; gap: 15px; align-items: flex-end; }
         
-        #start-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background: #000; z-index: 10000; display: flex; align-items: center; justify-content: center; }
-        #start-btn { padding: 20px 40px; background: #27ae60; color: white; border: none; border-radius: 10px; font-size: 20px; }
+        #overlay { position: fixed; top:0; left:0; width:100%; height:100%; background: #111; z-index: 10000; display: flex; flex-direction: column; align-items: center; justify-content: center; color: white; }
+        #start-btn { padding: 20px 40px; background: #e74c3c; color: white; border: none; border-radius: 10px; font-size: 24px; font-weight: bold; cursor: pointer; }
     </style>
 </head>
 <body>
 
-<div id="start-overlay">
-    <button id="start-btn">TAP TO LOAD CONTROLS</button>
+<div id="overlay">
+    <h2>Arcuz: Behind the Dark</h2>
+    <button id="start-btn">PLAY NOW</button>
 </div>
 
-<div id="game-container">
-    <div id="ruffle-player"></div>
-</div>
+<div id="ruffle-player"></div>
 
 <div class="ui-layer">
     <div class="dpad">
@@ -45,8 +43,6 @@
     <div class="actions">
         <div class="btn" style="background:rgba(255,0,0,0.5)" data-k="j">J</div>
         <div class="btn" style="background:rgba(0,0,255,0.5)" data-k="k">K</div>
-        <div class="btn" data-k="1">1</div>
-        <div class="btn" data-k="2">2</div>
     </div>
 </div>
 
@@ -56,30 +52,31 @@
     document.getElementById("ruffle-player").appendChild(player);
     player.load("Arcuz.swf");
 
+    // Key map for Flash
     const keyMap = { 
-        'w': 87, 'a': 65, 's': 83, 'd': 68, 
-        'j': 74, 'k': 75, '1': 49, '2': 50 
+        'w': 87, 'a': 65, 's': 83, 'd': 68, 'j': 74, 'k': 75 
     };
 
     function triggerKey(keyChar, type) {
         const code = keyMap[keyChar];
-        // Create the event
-        const event = new KeyboardEvent(type, {
+        const eventData = {
             key: keyChar,
-            code: isNaN(keyChar) ? "Key" + keyChar.toUpperCase() : "Digit" + keyChar,
+            code: "Key" + keyChar.toUpperCase(),
             keyCode: code,
             which: code,
             bubbles: true,
             cancelable: true
-        });
+        };
 
-        // Focus the player and dispatch to BOTH player and window
-        player.focus();
-        player.dispatchEvent(event);
-        window.dispatchEvent(event);
+        const e = new KeyboardEvent(type, eventData);
+
+        // SEND TO ALL THREE to ensure the Flash bridge catches it
+        window.dispatchEvent(e);
+        document.dispatchEvent(e);
+        player.dispatchEvent(e);
     }
 
-    // Handle button touches
+    // Button Logic
     document.querySelectorAll('.btn').forEach(btn => {
         const k = btn.getAttribute('data-k');
         
@@ -94,11 +91,19 @@
         });
     });
 
-    // Start Button Fixes Audio and Fullscreen
+    // Start Button: Fullscreen + Audio Unlock + Focus
     document.getElementById('start-btn').addEventListener('click', () => {
-        document.getElementById('start-overlay').style.display = 'none';
-        if (document.documentElement.requestFullscreen) document.documentElement.requestFullscreen();
-        player.focus();
+        document.getElementById('overlay').style.display = 'none';
+        
+        // Try to enter fullscreen
+        if (document.documentElement.requestFullscreen) {
+            document.documentElement.requestFullscreen();
+        }
+
+        // Essential: Give the game focus
+        setTimeout(() => {
+            player.focus();
+        }, 100);
     });
 </script>
 
