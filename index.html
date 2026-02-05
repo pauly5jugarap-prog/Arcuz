@@ -3,139 +3,104 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Arcuz Full Controls</title>
+    <title>Arcuz Mobile Fix</title>
     <script src="https://unpkg.com/@ruffle-rs/ruffle"></script>
     <style>
-        * { box-sizing: border-box; -webkit-touch-callout: none; -webkit-user-select: none; }
-        body, html { 
-            margin: 0; padding: 0; width: 100%; height: 100%; 
-            background: #000; overflow: hidden; position: fixed; font-family: sans-serif;
-        }
-
-        #game-wrapper { width: 100vw; height: 100vh; display: flex; align-items: center; justify-content: center; }
+        * { box-sizing: border-box; touch-action: none; -webkit-user-select: none; }
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: #000; overflow: hidden; }
+        #game-container { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
         #ruffle-player { width: 100%; height: 100%; }
 
-        /* Fullscreen Overlay */
-        #fs-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.9); z-index: 1000;
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-        }
-        #start-btn {
-            padding: 20px 40px; font-size: 24px; color: white; font-weight: bold;
-            background: #27ae60; border: none; border-radius: 12px; cursor: pointer;
-        }
-
-        /* Controls Container */
-        .controls-container {
-            position: absolute; bottom: env(safe-area-inset-bottom, 15px);
-            width: 100%; display: flex; justify-content: space-between;
-            padding: 0 20px; pointer-events: none; z-index: 50;
-        }
-
+        /* Controls */
+        .ui-layer { position: fixed; bottom: 20px; width: 100%; display: flex; justify-content: space-between; padding: 0 20px; pointer-events: none; z-index: 999; }
         .btn { 
-            width: 60px; height: 60px; background: rgba(255,255,255,0.15); 
-            border: 2px solid rgba(255,255,255,0.5); border-radius: 50%; 
-            display: flex; align-items: center; justify-content: center; 
-            color: #fff; pointer-events: auto; font-weight: bold; font-size: 14px;
-            touch-action: none; -webkit-tap-highlight-color: transparent;
+            width: 60px; height: 60px; background: rgba(255,255,255,0.2); 
+            border: 2px solid #fff; border-radius: 50%; display: flex; 
+            align-items: center; justify-content: center; color: #fff; 
+            pointer-events: auto; font-weight: bold;
         }
-        .btn:active { background: rgba(255,255,255,0.5); transform: scale(1.1); }
+        .btn:active { background: rgba(255,255,255,0.6); }
+        .dpad { display: grid; grid-template-columns: repeat(3, 65px); gap: 5px; }
+        .actions { display: grid; grid-template-columns: repeat(2, 70px); gap: 10px; align-items: end; }
         
-        /* Left Side: Movement */
-        .dpad { display: grid; grid-template-columns: repeat(3, 62px); gap: 4px; align-self: flex-end; }
-
-        /* Right Side: Potions, Skills, Combat */
-        .right-cluster { display: flex; flex-direction: column; gap: 10px; align-items: flex-end; }
-        .skill-row { display: flex; gap: 8px; }
-        .skill-btn { width: 40px; height: 40px; border-radius: 8px; background: rgba(155, 89, 182, 0.3); font-size: 12px; }
-        .potion-row { display: flex; gap: 8px; }
-        .potion-btn { width: 45px; height: 45px; border-radius: 8px; background: rgba(46, 204, 113, 0.3); }
-        .main-actions { display: flex; gap: 12px; }
-        .action-red { background: rgba(231, 76, 60, 0.5) !important; width: 75px; height: 75px; font-size: 16px; }
-        .action-blue { background: rgba(52, 152, 219, 0.5) !important; width: 75px; height: 75px; font-size: 16px; }
+        #start-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background: #000; z-index: 10000; display: flex; align-items: center; justify-content: center; }
+        #start-btn { padding: 20px 40px; background: #27ae60; color: white; border: none; border-radius: 10px; font-size: 20px; }
     </style>
 </head>
 <body>
 
-    <div id="fs-overlay">
-        <h2 style="color: white; margin-bottom: 20px;">ARCUZ 2 MOBILE</h2>
-        <button id="start-btn">START GAME</button>
+<div id="start-overlay">
+    <button id="start-btn">TAP TO LOAD CONTROLS</button>
+</div>
+
+<div id="game-container">
+    <div id="ruffle-player"></div>
+</div>
+
+<div class="ui-layer">
+    <div class="dpad">
+        <div></div><div class="btn" data-k="w">W</div><div></div>
+        <div class="btn" data-k="a">A</div><div class="btn" data-k="s">S</div><div class="btn" data-k="d">D</div>
     </div>
-
-    <div id="game-wrapper">
-        <div id="ruffle-player"></div>
+    <div class="actions">
+        <div class="btn" style="background:rgba(255,0,0,0.5)" data-k="j">J</div>
+        <div class="btn" style="background:rgba(0,0,255,0.5)" data-k="k">K</div>
+        <div class="btn" data-k="1">1</div>
+        <div class="btn" data-k="2">2</div>
     </div>
+</div>
 
-    <div class="controls-container">
-        <div class="dpad">
-            <div></div><div class="btn" id="btn-w">W</div><div></div>
-            <div class="btn" id="btn-a">A</div><div class="btn" id="btn-s">S</div><div class="btn" id="btn-d">D</div>
-        </div>
+<script>
+    const ruffle = window.RufflePlayer.newest();
+    const player = ruffle.createPlayer();
+    document.getElementById("ruffle-player").appendChild(player);
+    player.load("Arcuz.swf");
 
-        <div class="right-cluster">
-            <div class="skill-row">
-                <div class="btn skill-btn" id="btn-u">U</div>
-                <div class="btn skill-btn" id="btn-i">I</div>
-                <div class="btn skill-btn" id="btn-o">O</div>
-                <div class="btn skill-btn" id="btn-l">L</div>
-            </div>
-            <div class="potion-row">
-                <div class="btn potion-btn" id="btn-1">1</div>
-                <div class="btn potion-btn" id="btn-2">2</div>
-                <div class="btn potion-btn" id="btn-3">3</div>
-            </div>
-            <div class="main-actions">
-                <div class="btn action-red" id="btn-j">ATK (J)</div>
-                <div class="btn action-blue" id="btn-k">JMP (K)</div>
-            </div>
-        </div>
-    </div>
+    const keyMap = { 
+        'w': 87, 'a': 65, 's': 83, 'd': 68, 
+        'j': 74, 'k': 75, '1': 49, '2': 50 
+    };
 
-    <script>
-        const ruffle = window.RufflePlayer.newest();
-        const player = ruffle.createPlayer();
-        const container = document.getElementById("ruffle-player");
-        const overlay = document.getElementById("fs-overlay");
-        const startBtn = document.getElementById("start-btn");
+    function triggerKey(keyChar, type) {
+        const code = keyMap[keyChar];
+        // Create the event
+        const event = new KeyboardEvent(type, {
+            key: keyChar,
+            code: isNaN(keyChar) ? "Key" + keyChar.toUpperCase() : "Digit" + keyChar,
+            keyCode: code,
+            which: code,
+            bubbles: true,
+            cancelable: true
+        });
 
-        container.appendChild(player);
+        // Focus the player and dispatch to BOTH player and window
+        player.focus();
+        player.dispatchEvent(event);
+        window.dispatchEvent(event);
+    }
+
+    // Handle button touches
+    document.querySelectorAll('.btn').forEach(btn => {
+        const k = btn.getAttribute('data-k');
         
-        // UPDATED FILENAME
-        player.load("Arcuz.swf");
-
-        startBtn.addEventListener('click', () => {
-            const doc = document.documentElement;
-            if (doc.requestFullscreen) doc.requestFullscreen();
-            else if (doc.webkitRequestFullscreen) doc.webkitRequestFullscreen();
-            overlay.style.display = 'none';
+        btn.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            triggerKey(k, 'keydown');
         });
 
-        function sendKey(key, type) {
-            const keyCodeMap = { 
-                'w':87,'a':65,'s':83,'d':68,
-                'j':74,'k':75,
-                '1':49,'2':50,'3':51,
-                'u':85,'i':73,'o':79,'l':76 
-            };
-            const code = keyCodeMap[key];
-            const keyEvent = new KeyboardEvent(type, {
-                key: key, keyCode: code, which: code,
-                code: isNaN(key) ? "Key" + key.toUpperCase() : "Digit" + key,
-                bubbles: true, cancelable: true
-            });
-            player.dispatchEvent(keyEvent);
-            window.dispatchEvent(keyEvent);
-        }
-
-        const allKeys = ['w','a','s','d','j','k','1','2','3','u','i','o','l'];
-        allKeys.forEach(k => {
-            const btn = document.getElementById('btn-' + k);
-            btn.addEventListener('touchstart', (e) => { e.preventDefault(); sendKey(k, 'keydown'); });
-            btn.addEventListener('touchend', (e) => { e.preventDefault(); sendKey(k, 'keyup'); });
+        btn.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            triggerKey(k, 'keyup');
         });
+    });
 
-        document.addEventListener('touchmove', (e) => { e.preventDefault(); }, { passive: false });
-    </script>
+    // Start Button Fixes Audio and Fullscreen
+    document.getElementById('start-btn').addEventListener('click', () => {
+        document.getElementById('start-overlay').style.display = 'none';
+        if (document.documentElement.requestFullscreen) document.documentElement.requestFullscreen();
+        player.focus();
+    });
+</script>
+
 </body>
 </html>
