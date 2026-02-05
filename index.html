@@ -2,51 +2,93 @@
 <html>
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Arcuz Mobile</title>
+    <title>Arcuz 2 Mobile</title>
     <script src="https://unpkg.com/@ruffle-rs/ruffle"></script>
     <style>
         body { margin: 0; background: #000; overflow: hidden; font-family: sans-serif; touch-action: none; }
         #ruffle { width: 100vw; height: 100vh; }
+        
+        /* Layout for Controls */
         .controls { position: absolute; bottom: 20px; width: 100%; display: flex; justify-content: space-between; padding: 0 20px; box-sizing: border-box; pointer-events: none; }
-        .btn { width: 60px; height: 60px; background: rgba(255,255,255,0.2); border: 2px solid #fff; border-radius: 50%; 
-               display: flex; align-items: center; justify-content: center; color: #fff; pointer-events: auto; user-select: none; font-weight: bold; }
-        .btn:active { background: rgba(255,255,255,0.5); }
-        .dpad { display: grid; grid-template-columns: repeat(3, 65px); gap: 5px; }
-        .actions { display: flex; gap: 15px; align-items: flex-end; }
+        .btn { 
+            width: 65px; height: 65px; background: rgba(255,255,255,0.15); 
+            border: 2px solid rgba(255,255,255,0.8); border-radius: 50%; 
+            display: flex; align-items: center; justify-content: center; 
+            color: #fff; pointer-events: auto; user-select: none; font-weight: bold;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .btn:active { background: rgba(255,255,255,0.5); transform: scale(1.1); }
+        
+        .dpad { display: grid; grid-template-columns: repeat(3, 70px); gap: 5px; }
+        .actions { display: flex; gap: 20px; align-items: flex-end; }
+        .action-red { background: rgba(255,0,0,0.4) !important; width: 80px; height: 80px; }
+        .action-blue { background: rgba(0,0,255,0.4) !important; width: 80px; height: 80px; }
     </style>
 </head>
 <body>
     <div id="ruffle"></div>
+
     <div class="controls">
         <div class="dpad">
-            <div></div><div class="btn" id="btn-w">W</div><div></div>
-            <div class="btn" id="btn-a">A</div>
-            <div class="btn" id="btn-s">S</div>
-            <div class="btn" id="btn-d">D</div>
+            <div></div><div class="btn" data-key="w">W</div><div></div>
+            <div class="btn" data-key="a">A</div><div class="btn" data-key="s">S</div><div class="btn" data-key="d">D</div>
         </div>
+
         <div class="actions">
-            <div class="btn" style="background:rgba(255,0,0,0.5)" id="btn-j">ATK</div>
-            <div class="btn" style="background:rgba(0,0,255,0.5)" id="btn-k">JMP</div>
+            <div class="btn action-red" data-key="j">ATK (J)</div>
+            <div class="btn action-blue" data-key="k">JMP (K)</div>
         </div>
     </div>
+
     <script>
+        // 1. Load Ruffle
         const ruffle = window.RufflePlayer.newest();
         const player = ruffle.createPlayer();
         document.getElementById("ruffle").appendChild(player);
-        
-        // This MUST match your file name in the repo exactly
-        player.load("Arcuz.swf");
+        player.load("Arcuz 2 - Dungeons (v1.146) (Fixed).swf");
 
-        function simulateKey(key, type) {
-            document.dispatchEvent(new KeyboardEvent(type, { key: key, keyCode: key.toUpperCase().charCodeAt(0), bubbles: true }));
+        // 2. The Secret Sauce: Keyboard Simulation
+        function sendKeyEvent(key, type) {
+            const keyCodeMap = { 'w':87, 'a':65, 's':83, 'd':68, 'j':74, 'k':75 };
+            const code = keyCodeMap[key];
+            
+            const event = new KeyboardEvent(type, {
+                key: key,
+                keyCode: code,
+                which: code,
+                code: "Key" + key.toUpperCase(),
+                bubbles: true,
+                cancelable: true
+            });
+            
+            // Dispatch to both window and the player specifically
+            window.dispatchEvent(event);
+            player.dispatchEvent(event);
         }
 
-        const keys = ['w', 'a', 's', 'd', 'j', 'k'];
-        keys.forEach(k => {
-            const el = document.getElementById('btn-' + k);
-            el.addEventListener('touchstart', (e) => { e.preventDefault(); simulateKey(k, 'keydown'); });
-            el.addEventListener('touchend', (e) => { e.preventDefault(); simulateKey(k, 'keyup'); });
+        // 3. Attach Events to Buttons
+        document.querySelectorAll('.btn').forEach(button => {
+            const key = button.getAttribute('data-key');
+
+            // Handle Touch
+            button.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                sendKeyEvent(key, 'keydown');
+            });
+            button.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                sendKeyEvent(key, 'keyup');
+            });
+
+            // Handle Mouse (for testing on PC)
+            button.addEventListener('mousedown', () => sendKeyEvent(key, 'keydown'));
+            button.addEventListener('mouseup', () => sendKeyEvent(key, 'keyup'));
         });
+
+        // Prevent zooming when tapping fast
+        document.addEventListener('touchstart', (e) => {
+            if (e.touches.length > 1) e.preventDefault();
+        }, { passive: false });
     </script>
 </body>
 </html>
