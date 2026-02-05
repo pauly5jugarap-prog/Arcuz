@@ -3,104 +3,117 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Arcuz: Behind the Dark - Analog</title>
+    <title>Arcuz: Behind the Dark - Mobile</title>
     <script src="https://unpkg.com/@ruffle-rs/ruffle"></script>
     <style>
-    /* Reset and prevent scrolling */
-    * { box-sizing: border-box; touch-action: none; -webkit-user-select: none; user-select: none; }
-    
-    body, html { 
-        margin: 0; padding: 0; width: 100%; height: 100%; 
-        background: #000; overflow: hidden; position: fixed; 
-        display: flex; align-items: center; justify-content: center;
-    }
+        /* 1. RESET & CENTER */
+        * { box-sizing: border-box; touch-action: none; -webkit-user-select: none; user-select: none; }
+        body, html { 
+            margin: 0; padding: 0; width: 100%; height: 100%; 
+            background: #000; overflow: hidden; position: fixed;
+            display: flex; align-items: center; justify-content: center;
+        }
 
-    /* Container for the game */
-    #game-container {
-        width: 100vw;
-        height: 100vh;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
+        /* 2. GAME VIEWPORT */
+        #game-container { 
+            width: 100vw; height: 100vh; 
+            display: flex; align-items: center; justify-content: center; 
+        }
+        ruffle-player { width: 100% !important; height: 100% !important; }
 
-    /* Target the Ruffle element specifically */
-    ruffle-player {
-        width: 100% !important;
-        height: 100% !important;
-        display: block;
-    }
+        /* 3. ANALOG STICK (LEFT) */
+        #stick-base {
+            position: fixed; bottom: 40px; left: 40px;
+            width: 120px; height: 120px;
+            background: rgba(255,255,255,0.1); border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 50%; z-index: 1000; pointer-events: auto;
+            display: flex; align-items: center; justify-content: center;
+        }
+        #stick-knob {
+            width: 50px; height: 50px;
+            background: rgba(255,255,255,0.5); border: 2px solid #fff;
+            border-radius: 50%; transition: transform 0.1s linear;
+        }
 
-    /* UI Layer for Buttons */
-    .ui-layer { 
-        position: fixed; 
-        bottom: 20px; 
-        width: 100%; 
-        display: flex; 
-        justify-content: space-between; 
-        padding: 0 20px; 
-        pointer-events: none; 
-        z-index: 999; 
-    }
+        /* 4. BUTTONS (RIGHT) */
+        .ui-right {
+            position: fixed; bottom: 30px; right: 20px;
+            display: flex; flex-direction: column; gap: 10px; align-items: flex-end;
+            z-index: 1000; pointer-events: none;
+        }
+        .row { display: flex; gap: 8px; pointer-events: none; }
+        .btn { 
+            width: 50px; height: 50px; background: rgba(255,255,255,0.2); 
+            border: 2px solid #fff; border-radius: 10px; display: flex; 
+            align-items: center; justify-content: center; color: #fff; 
+            pointer-events: auto; font-weight: bold; font-family: sans-serif;
+        }
+        .btn:active { background: rgba(255,255,255,0.6); transform: scale(1.1); }
+        .combat-btn { width: 75px; height: 75px; border-radius: 50%; font-size: 18px; }
+        .atk { background: rgba(231, 76, 60, 0.5); }
+        .jmp { background: rgba(52, 152, 219, 0.5); }
 
-    .btn { 
-        width: 65px; height: 65px; background: rgba(255,255,255,0.2); 
-        border: 2px solid #fff; border-radius: 50%; display: flex; 
-        align-items: center; justify-content: center; color: #fff; 
-        pointer-events: auto; font-weight: bold; font-size: 20px;
-    }
-    .btn:active { background: rgba(255,255,255,0.6); transform: scale(1.1); }
-    .dpad { display: grid; grid-template-columns: repeat(3, 65px); gap: 5px; }
-    .actions { display: flex; gap: 15px; align-items: flex-end; }
-    
-    #overlay { position: fixed; top:0; left:0; width:100%; height:100%; background: #111; z-index: 10000; display: flex; align-items: center; justify-content: center; }
-    #start-btn { padding: 25px 50px; background: #27ae60; color: white; border: none; border-radius: 15px; font-size: 24px; font-weight: bold; }
-</style>
+        /* 5. OVERLAY */
+        #overlay { 
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+            background: #000; z-index: 9999; display: flex; 
+            flex-direction: column; align-items: center; justify-content: center; 
+        }
+        #start-btn { 
+            padding: 20px 40px; background: #27ae60; color: white; 
+            border: none; border-radius: 10px; font-size: 20px; cursor: pointer;
+        }
+    </style>
 </head>
 <body>
 
-<div id="overlay"><button id="start-btn">START ARCUZ</button></div>
-<div id="ruffle-player"></div>
-
-<div id="joystick-container">
-    <div id="joystick-knob"></div>
+<div id="overlay">
+    <h2 style="color:white; font-family:sans-serif;">ARCUZ: BEHIND THE DARK</h2>
+    <button id="start-btn">TAP TO START</button>
 </div>
 
-<div class="actions-layer">
-    <div class="row">
-        <div class="btn" data-k="u">U</div>
+<div id="game-container"></div>
+
+<div id="stick-base">
+    <div id="stick-knob"></div>
+</div>
+
+<div class="ui-right">
+    <div class="row"> <div class="btn" data-k="u">U</div>
         <div class="btn" data-k="i">I</div>
     </div>
-    <div class="row">
-        <div class="btn" data-k="1">1</div>
+    <div class="row"> <div class="btn" data-k="1">1</div>
         <div class="btn" data-k="2">2</div>
         <div class="btn" data-k="3">3</div>
     </div>
-    <div class="row">
-        <div class="btn atk-btn" data-k="j">ATK</div>
-        <div class="btn atk-btn" style="background:rgba(52,152,219,0.5)" data-k="k">JMP</div>
+    <div class="row"> <div class="btn combat-btn atk" data-k="j">ATK</div>
+        <div class="btn combat-btn jmp" data-k="k">JMP</div>
     </div>
 </div>
 
 <script>
+    // --- 1. RUFFLE SETUP ---
     const ruffle = window.RufflePlayer.newest();
-const player = ruffle.createPlayer();
-document.getElementById("game-container").appendChild(player);
+    const player = ruffle.createPlayer();
+    document.getElementById("game-container").appendChild(player);
 
-// Configuration to eliminate black space and center the game
-player.config = {
-    "letterbox": "on",
-    "scale": "showAll",
-    "forceScale": true,
-    "quality": "high",
-    "autoplay": "on",
-    "unmuteOverlay": "hidden"
-};
+    player.config = {
+        "letterbox": "on",
+        "scale": "showAll",
+        "forceScale": true,
+        "autoplay": "on",
+        "unmuteOverlay": "hidden"
+    };
 
-player.load("Arcuz.swf");
+    player.load("Arcuz.swf");
 
-    const keyCodes = { 'w':87,'a':65,'s':83,'d':68,'j':74,'k':75,'u':85,'i':73,'1':49,'2':50,'3':51 };
-    let activeKeys = new Set();
+    // --- 2. KEYBOARD EMULATION ---
+    const keyCodes = { 
+        'w':87,'a':65,'s':83,'d':68,
+        'j':74,'k':75,'u':85,'i':73,
+        '1':49,'2':50,'3':51 
+    };
+    let pressedKeys = new Set();
 
     function sendKey(k, type) {
         const event = new KeyboardEvent(type, {
@@ -111,61 +124,65 @@ player.load("Arcuz.swf");
         player.dispatchEvent(event);
     }
 
-    // --- ANALOG STICK LOGIC ---
-    const stick = document.getElementById('joystick-container');
-    const knob = document.getElementById('joystick-knob');
-    let stickData = { active: false, x: 0, y: 0 };
+    // --- 3. ANALOG STICK LOGIC ---
+    
+    const base = document.getElementById('stick-base');
+    const knob = document.getElementById('stick-knob');
+    let stickActive = false;
 
-    stick.addEventListener('touchstart', (e) => { stickData.active = true; updateStick(e); });
-    stick.addEventListener('touchmove', (e) => { e.preventDefault(); updateStick(e); });
-    stick.addEventListener('touchend', () => {
-        stickData.active = false;
+    base.addEventListener('touchstart', (e) => { stickActive = true; handleStick(e); });
+    base.addEventListener('touchmove', (e) => { e.preventDefault(); handleStick(e); });
+    base.addEventListener('touchend', () => {
+        stickActive = false;
         knob.style.transform = `translate(0px, 0px)`;
-        ['w','a','s','d'].forEach(k => { if(activeKeys.has(k)) { sendKey(k, 'keyup'); activeKeys.delete(k); } });
+        ['w','a','s','d'].forEach(k => { if(pressedKeys.has(k)) { sendKey(k, 'keyup'); pressedKeys.delete(k); } });
     });
 
-    function updateStick(e) {
-        if (!stickData.active) return;
-        const rect = stick.getBoundingClientRect();
+    function handleStick(e) {
+        if (!stickActive) return;
+        const rect = base.getBoundingClientRect();
         const centerX = rect.left + rect.width / 2;
         const centerY = rect.top + rect.height / 2;
         const touch = e.touches[0];
         
         let dx = touch.clientX - centerX;
         let dy = touch.clientY - centerY;
-        const dist = Math.sqrt(dx*dx + dy*dy);
-        const maxDist = 50;
+        const distance = Math.sqrt(dx*dx + dy*dy);
+        const maxLimit = 40;
 
-        if (dist > maxDist) { dx *= maxDist/dist; dy *= maxDist/dist; }
+        if (distance > maxLimit) { dx *= maxLimit/distance; dy *= maxLimit/distance; }
         knob.style.transform = `translate(${dx}px, ${dy}px)`;
 
-        // Convert coordinates to WASD
-        const threshold = 15;
-        handleDir('w', dy < -threshold);
-        handleDir('s', dy > threshold);
-        handleDir('a', dx < -threshold);
-        handleDir('d', dx > threshold);
+        // Convert movement to W A S D
+        const deadzone = 12;
+        manageKey('w', dy < -deadzone);
+        manageKey('s', dy > deadzone);
+        manageKey('a', dx < -deadzone);
+        manageKey('d', dx > deadzone);
     }
 
-    function handleDir(key, isPressed) {
-        if (isPressed && !activeKeys.has(key)) {
-            sendKey(key, 'keydown'); activeKeys.add(key);
-        } else if (!isPressed && activeKeys.has(key)) {
-            sendKey(key, 'keyup'); activeKeys.delete(key);
+    function manageKey(key, shouldBeDown) {
+        if (shouldBeDown && !pressedKeys.has(key)) {
+            sendKey(key, 'keydown'); pressedKeys.add(key);
+        } else if (!shouldBeDown && pressedKeys.has(key)) {
+            sendKey(key, 'keyup'); pressedKeys.delete(key);
         }
     }
 
-    // --- BUTTON LOGIC ---
+    // --- 4. BUTTON LOGIC ---
     document.querySelectorAll('.btn').forEach(btn => {
         const k = btn.getAttribute('data-k');
         btn.addEventListener('touchstart', (e) => { e.preventDefault(); sendKey(k, 'keydown'); });
         btn.addEventListener('touchend', (e) => { e.preventDefault(); sendKey(k, 'keyup'); });
     });
 
+    // --- 5. START OVERLAY ---
     document.getElementById('start-btn').addEventListener('click', () => {
         document.getElementById('overlay').style.display = 'none';
+        if (document.documentElement.requestFullscreen) document.documentElement.requestFullscreen();
         player.focus();
     });
 </script>
+
 </body>
 </html>
