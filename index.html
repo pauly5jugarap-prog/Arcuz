@@ -52,7 +52,7 @@
 <body>
 
 <div id="overlay">
-    <h1 style="color:#f1c40f; font-family:sans-serif; margin-bottom: 20px;">ARCUZ MOBILE</h1>
+    <h1 style="color:#f1c40f; font-family:sans-serif; margin-bottom: 20px;">ARCUZ LAYCHU MOBILE PORT</h1>
     <button id="start-btn">TAP TO PLAY</button>
 </div>
 
@@ -61,10 +61,10 @@
 <div id="stick-base"><div id="stick-knob"></div></div>
 
 <div class="ui-right">
-    <div class="row"><div class="btn" data-k="u">U</div><div class="btn" data-k="i">I</div></div>
+    <div class="row"><div class="btn" data-k="i">U</div><div class="btn" data-k="l">I</div></div>
     <div class="row"><div class="btn" data-k="1">1</div><div class="btn" data-k="2">2</div><div class="btn" data-k="3">3</div></div>
-    <div class="row"><div class="btn combat-btn" style="background:rgba(231,76,60,0.5)" data-k="j">ATK</div>
-                     <div class="btn combat-btn" style="background:rgba(52,152,219,0.5)" data-k="k">JMP</div></div>
+    <div class="row"><div class="btn combat-btn" style="background:rgba(231,76,60,0.5)" data-k="j">J</div>
+                     <div class="btn combat-btn" style="background:rgba(52,152,219,0.5)" data-k="k">K</div></div>
 </div>
 
 <script>
@@ -76,7 +76,7 @@
     player.config = { "letterbox": "on", "scale": "showAll", "forceScale": true, "autoplay": "on" };
     player.load("Arcuz.swf");
 
-    const keyCodes = { 'w':87,'a':65,'s':83,'d':68,'j':74,'k':75,'u':85,'i':73,'1':49,'2':50,'3':51 };
+    const keyCodes = { 'w':87,'a':65,'s':83,'d':68,'j':74,'k':75,'i':73,'l':76,'1':49,'2':50,'3':51 };
     let pressedKeys = new Set();
 
     function sendKey(k, type) {
