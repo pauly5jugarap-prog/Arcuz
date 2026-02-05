@@ -1,1 +1,52 @@
-<!DOCTYPE html> <html lang="en"> <head> <meta charset="UTF-8"> <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"> <title>Arcuz Mobile</title> <style> /* Black background and full screen setup */ body { margin: 0; background: #000; overflow: hidden; font-family: sans-serif; touch-action: none; color: white; } #app-container { width: 100vw; height: 100vh; display: flex; flex-direction: column; position: relative; } #game-area { flex-grow: 1; width: 100%; height: 100%; background: #000; } /* The Control Panel Overlay */ .controls { position: absolute; bottom: 5%; width: 100%; display: flex; justify-content: space-between; padding: 0 5%; box-sizing: border-box; pointer-events: none; } /* Universal Button Style */ .btn { width: 70px; height: 70px; background: rgba(255,255,255,0.15); border: 2px solid rgba(255,255,255,0.3); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 22px; pointer-events: auto; user-select: none; -webkit-tap-highlight-color: transparent; } .btn:active { background: rgba(255,255,255,0.5); transform: scale(1.1); border-color: #fff; } /* Left side: W A S D D-Pad */ .dpad { display: grid; grid-template-columns: repeat(3, 65px); gap: 5px; } /* Right side: J K I L + Space */ .action-container { display: flex; flex-direction: column; align-items: flex-end; gap: 10px; } .action-grid { display: grid; grid-template-columns: repeat(2, 75px); gap: 10px; } .space-btn { width: 160px; height: 50px; border-radius: 12px; font-size: 16px; } </style> </head> <body> <div id="app-container"> <div id="game-area"></div> <div class="controls"> <div class="dpad"> <div></div><div class="btn" ontouchstart="kDown(87)" ontouchend="kUp(87)">W</div><div></div> <div class="btn" ontouchstart="kDown(65)" ontouchend="kUp(65)">A</div> <div class="btn" ontouchstart="kDown(83)" ontouchend="kUp(83)">S</div> <div class="btn" ontouchstart="kDown(68)" ontouchend="kUp(68)">D</div> </div> <div class="action-container"> <div class="action-grid"> <div class="btn" style="color: #4fc3f7;" ontouchstart="kDown(73)" ontouchend="kUp(73)">I</div> <div class="btn" style="color: #81c784;" ontouchstart="kDown(76)" ontouchend="kUp(76)">L</div> <div class="btn" style="color: #ff8a65; width: 85px; height: 85px;" ontouchstart="kDown(74)" ontouchend="kUp(74)">J</div> <div class="btn" style="color: #ba68c8;" ontouchstart="kDown(75)" ontouchend="kUp(75)">K</div> </div> <div class="btn space-btn" ontouchstart="kDown(32)" ontouchend="kUp(32)">SPACE / PICKUP</div> </div> </div> </div> <script src="https://unpkg.com/@ruffle-rs/ruffle"></script> <script> // The specific direct link to your SWF on Archive.org const ARC_URL = "arcuz.swf"; window.RufflePlayer = window.RufflePlayer || {}; window.addEventListener("DOMContentLoaded", () => { const ruffle = window.RufflePlayer.newest(); const player = ruffle.createPlayer(); document.getElementById("game-area").appendChild(player); // Configuration for smooth mobile play player.load("Arcuz.swf"); // Key Press Functions (Simulates Keyboard for the Game) function kDown(code) { window.dispatchEvent(new KeyboardEvent('keydown', { keyCode: code, which: code, bubbles: true })); } function kUp(code) { window.dispatchEvent(new KeyboardEvent('keyup', { keyCode: code, which: code, bubbles: true })); } </script> </body> </html>
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Arcuz Mobile</title>
+    <script src="https://unpkg.com/@ruffle-rs/ruffle"></script>
+    <style>
+        body { margin: 0; background: #000; overflow: hidden; font-family: sans-serif; touch-action: none; }
+        #ruffle { width: 100vw; height: 100vh; }
+        .controls { position: absolute; bottom: 20px; width: 100%; display: flex; justify-content: space-between; padding: 0 20px; box-sizing: border-box; pointer-events: none; }
+        .btn { width: 60px; height: 60px; background: rgba(255,255,255,0.2); border: 2px solid #fff; border-radius: 50%; 
+               display: flex; align-items: center; justify-content: center; color: #fff; pointer-events: auto; user-select: none; font-weight: bold; }
+        .btn:active { background: rgba(255,255,255,0.5); }
+        .dpad { display: grid; grid-template-columns: repeat(3, 65px); gap: 5px; }
+        .actions { display: flex; gap: 15px; align-items: flex-end; }
+    </style>
+</head>
+<body>
+    <div id="ruffle"></div>
+    <div class="controls">
+        <div class="dpad">
+            <div></div><div class="btn" id="btn-w">W</div><div></div>
+            <div class="btn" id="btn-a">A</div>
+            <div class="btn" id="btn-s">S</div>
+            <div class="btn" id="btn-d">D</div>
+        </div>
+        <div class="actions">
+            <div class="btn" style="background:rgba(255,0,0,0.5)" id="btn-j">ATK</div>
+            <div class="btn" style="background:rgba(0,0,255,0.5)" id="btn-k">JMP</div>
+        </div>
+    </div>
+    <script>
+        const ruffle = window.RufflePlayer.newest();
+        const player = ruffle.createPlayer();
+        document.getElementById("ruffle").appendChild(player);
+        
+        // This MUST match your file name in the repo exactly
+        player.load("Arcuz.swf");
+
+        function simulateKey(key, type) {
+            document.dispatchEvent(new KeyboardEvent(type, { key: key, keyCode: key.toUpperCase().charCodeAt(0), bubbles: true }));
+        }
+
+        const keys = ['w', 'a', 's', 'd', 'j', 'k'];
+        keys.forEach(k => {
+            const el = document.getElementById('btn-' + k);
+            el.addEventListener('touchstart', (e) => { e.preventDefault(); simulateKey(k, 'keydown'); });
+            el.addEventListener('touchend', (e) => { e.preventDefault(); simulateKey(k, 'keyup'); });
+        });
+    </script>
+</body>
+</html>
