@@ -47,38 +47,54 @@
 </div>
 
 <script>
+    // 1. Initialize Ruffle
     const ruffle = window.RufflePlayer.newest();
     const player = ruffle.createPlayer();
-    document.getElementById("ruffle-player").appendChild(player);
+    
+    // 2. Center and Scale the game
+    const container = document.getElementById("ruffle-player");
+    container.appendChild(player);
+
+    // This part centers the Flash game and makes it fill the screen
+    player.style.width = "100%";
+    player.style.height = "100%";
+    player.config = {
+        "letterbox": "on",
+        "scale": "showAll",
+        "forceScale": true,
+        "autoplay": "on",
+        "unmuteOverlay": "hidden"
+    };
+
+    // 3. Load the game (Ensure filename is Arcuz.swf)
     player.load("Arcuz.swf");
 
-    // Key map for Flash
+    // 4. Keyboard Simulation Logic
     const keyMap = { 
-        'w': 87, 'a': 65, 's': 83, 'd': 68, 'j': 74, 'k': 75 
+        'w': 87, 'a': 65, 's': 83, 'd': 68, 
+        'j': 74, 'k': 75, '1': 49, '2': 50, '3': 51,
+        'u': 85, 'i': 73, 'o': 79, 'l': 76, 'c': 67
     };
 
     function triggerKey(keyChar, type) {
         const code = keyMap[keyChar];
-        const eventData = {
+        const event = new KeyboardEvent(type, {
             key: keyChar,
-            code: "Key" + keyChar.toUpperCase(),
             keyCode: code,
             which: code,
+            code: isNaN(keyChar) ? "Key" + keyChar.toUpperCase() : "Digit" + keyChar,
             bubbles: true,
             cancelable: true
-        };
+        });
 
-        const e = new KeyboardEvent(type, eventData);
-
-        // SEND TO ALL THREE to ensure the Flash bridge catches it
-        window.dispatchEvent(e);
-        document.dispatchEvent(e);
-        player.dispatchEvent(e);
+        player.focus();
+        player.dispatchEvent(event);
+        window.dispatchEvent(event);
     }
 
-    // Button Logic
+    // 5. Attach Touch Events to Buttons
     document.querySelectorAll('.btn').forEach(btn => {
-        const k = btn.getAttribute('data-k');
+        const k = btn.innerText.toLowerCase().split(' ')[0]; // Gets 'w', 'a', etc.
         
         btn.addEventListener('touchstart', (e) => {
             e.preventDefault();
@@ -91,19 +107,13 @@
         });
     });
 
-    // Start Button: Fullscreen + Audio Unlock + Focus
+    // 6. Start Button / Fullscreen
     document.getElementById('start-btn').addEventListener('click', () => {
         document.getElementById('overlay').style.display = 'none';
-        
-        // Try to enter fullscreen
         if (document.documentElement.requestFullscreen) {
             document.documentElement.requestFullscreen();
         }
-
-        // Essential: Give the game focus
-        setTimeout(() => {
-            player.focus();
-        }, 100);
+        player.focus();
     });
 </script>
 
