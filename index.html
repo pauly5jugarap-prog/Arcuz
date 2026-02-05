@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Arcuz 2 Mobile</title>
+    <title>Arcuz</title>
     <script src="https://unpkg.com/@ruffle-rs/ruffle"></script>
     <style>
         body { margin: 0; background: #000; overflow: hidden; font-family: sans-serif; touch-action: none; }
@@ -45,7 +45,7 @@
         const ruffle = window.RufflePlayer.newest();
         const player = ruffle.createPlayer();
         document.getElementById("ruffle").appendChild(player);
-        player.load("Arcuz 2 - Dungeons (v1.146) (Fixed).swf");
+        player.load("Arcuz.swf");
 
         // 2. The Secret Sauce: Keyboard Simulation
         function sendKeyEvent(key, type) {
