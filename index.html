@@ -3,119 +3,146 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Arcuz Mobile Fix</title>
+    <title>Arcuz: Behind the Dark - Analog</title>
     <script src="https://unpkg.com/@ruffle-rs/ruffle"></script>
     <style>
         * { box-sizing: border-box; touch-action: none; -webkit-user-select: none; user-select: none; }
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: #000; overflow: hidden; position: fixed; }
-        #ruffle-player { width: 100%; height: 100%; position: absolute; top: 0; left: 0; }
+        #ruffle-player { width: 100%; height: 100%; position: absolute; }
 
-        /* Controls */
-        .ui-layer { position: fixed; bottom: 20px; width: 100%; display: flex; justify-content: space-between; padding: 0 20px; pointer-events: none; z-index: 999; }
-        .btn { 
-            width: 65px; height: 65px; background: rgba(255,255,255,0.2); 
-            border: 2px solid #fff; border-radius: 50%; display: flex; 
-            align-items: center; justify-content: center; color: #fff; 
-            pointer-events: auto; font-weight: bold; font-size: 20px;
+        /* Joystick Styling */
+        #joystick-container {
+            position: fixed; bottom: 40px; left: 40px;
+            width: 140px; height: 140px;
+            background: rgba(255,255,255,0.1); border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            z-index: 999; pointer-events: auto; border: 2px solid rgba(255,255,255,0.3);
         }
-        .btn:active { background: rgba(255,255,255,0.6); transform: scale(1.1); }
-        .dpad { display: grid; grid-template-columns: repeat(3, 65px); gap: 5px; }
-        .actions { display: flex; gap: 15px; align-items: flex-end; }
-        
-        #overlay { position: fixed; top:0; left:0; width:100%; height:100%; background: #111; z-index: 10000; display: flex; flex-direction: column; align-items: center; justify-content: center; color: white; }
-        #start-btn { padding: 20px 40px; background: #e74c3c; color: white; border: none; border-radius: 10px; font-size: 24px; font-weight: bold; cursor: pointer; }
+        #joystick-knob {
+            width: 60px; height: 60px;
+            background: rgba(255,255,255,0.4); border-radius: 50%;
+            border: 2px solid #fff;
+        }
+
+        /* Right Side Button Grid */
+        .actions-layer {
+            position: fixed; bottom: 30px; right: 20px;
+            display: flex; flex-direction: column; gap: 10px; align-items: flex-end;
+            z-index: 999; pointer-events: none;
+        }
+        .row { display: flex; gap: 10px; pointer-events: none; }
+        .btn { 
+            width: 55px; height: 55px; background: rgba(255,255,255,0.2); 
+            border: 2px solid #fff; border-radius: 12px; display: flex; 
+            align-items: center; justify-content: center; color: #fff; 
+            pointer-events: auto; font-weight: bold;
+        }
+        .btn:active { background: rgba(255,255,255,0.6); }
+        .atk-btn { width: 80px; height: 80px; border-radius: 50%; background: rgba(231, 76, 60, 0.5); }
+
+        #overlay { position: fixed; top:0; left:0; width:100%; height:100%; background: #000; z-index: 10000; display: flex; align-items: center; justify-content: center; }
+        #start-btn { padding: 20px 40px; background: #27ae60; color: white; border-radius: 10px; font-size: 20px; border: none; }
     </style>
 </head>
 <body>
 
-<div id="overlay">
-    <h2>Arcuz: Behind the Dark</h2>
-    <button id="start-btn">PLAY NOW</button>
-</div>
-
+<div id="overlay"><button id="start-btn">START ARCUZ</button></div>
 <div id="ruffle-player"></div>
 
-<div class="ui-layer">
-    <div class="dpad">
-        <div></div><div class="btn" data-k="w">W</div><div></div>
-        <div class="btn" data-k="a">A</div><div class="btn" data-k="s">S</div><div class="btn" data-k="d">D</div>
+<div id="joystick-container">
+    <div id="joystick-knob"></div>
+</div>
+
+<div class="actions-layer">
+    <div class="row">
+        <div class="btn" data-k="u">U</div>
+        <div class="btn" data-k="i">I</div>
     </div>
-    <div class="actions">
-        <div class="btn" style="background:rgba(255,0,0,0.5)" data-k="j">J</div>
-        <div class="btn" style="background:rgba(0,0,255,0.5)" data-k="k">K</div>
+    <div class="row">
+        <div class="btn" data-k="1">1</div>
+        <div class="btn" data-k="2">2</div>
+        <div class="btn" data-k="3">3</div>
+    </div>
+    <div class="row">
+        <div class="btn atk-btn" data-k="j">ATK</div>
+        <div class="btn atk-btn" style="background:rgba(52,152,219,0.5)" data-k="k">JMP</div>
     </div>
 </div>
 
 <script>
-    // 1. Initialize Ruffle
     const ruffle = window.RufflePlayer.newest();
     const player = ruffle.createPlayer();
-    
-    // 2. Center and Scale the game
-    const container = document.getElementById("ruffle-player");
-    container.appendChild(player);
-
-    // This part centers the Flash game and makes it fill the screen
-    player.style.width = "100%";
-    player.style.height = "100%";
-    player.config = {
-        "letterbox": "on",
-        "scale": "showAll",
-        "forceScale": true,
-        "autoplay": "on",
-        "unmuteOverlay": "hidden"
-    };
-
-    // 3. Load the game (Ensure filename is Arcuz.swf)
+    document.getElementById("ruffle-player").appendChild(player);
+    player.config = { "letterbox": "on", "scale": "showAll", "forceScale": true };
     player.load("Arcuz.swf");
 
-    // 4. Keyboard Simulation Logic
-    const keyMap = { 
-        'w': 87, 'a': 65, 's': 83, 'd': 68, 
-        'j': 74, 'k': 75, '1': 49, '2': 50, '3': 51,
-        'u': 85, 'i': 73, 'o': 79, 'l': 76, 'c': 67
-    };
+    const keyCodes = { 'w':87,'a':65,'s':83,'d':68,'j':74,'k':75,'u':85,'i':73,'1':49,'2':50,'3':51 };
+    let activeKeys = new Set();
 
-    function triggerKey(keyChar, type) {
-        const code = keyMap[keyChar];
+    function sendKey(k, type) {
         const event = new KeyboardEvent(type, {
-            key: keyChar,
-            keyCode: code,
-            which: code,
-            code: isNaN(keyChar) ? "Key" + keyChar.toUpperCase() : "Digit" + keyChar,
-            bubbles: true,
-            cancelable: true
+            key: k, keyCode: keyCodes[k], which: keyCodes[k],
+            code: isNaN(k) ? "Key"+k.toUpperCase() : "Digit"+k,
+            bubbles: true
         });
-
-        player.focus();
         player.dispatchEvent(event);
-        window.dispatchEvent(event);
     }
 
-    // 5. Attach Touch Events to Buttons
-    document.querySelectorAll('.btn').forEach(btn => {
-        const k = btn.innerText.toLowerCase().split(' ')[0]; // Gets 'w', 'a', etc.
-        
-        btn.addEventListener('touchstart', (e) => {
-            e.preventDefault();
-            triggerKey(k, 'keydown');
-        });
+    // --- ANALOG STICK LOGIC ---
+    const stick = document.getElementById('joystick-container');
+    const knob = document.getElementById('joystick-knob');
+    let stickData = { active: false, x: 0, y: 0 };
 
-        btn.addEventListener('touchend', (e) => {
-            e.preventDefault();
-            triggerKey(k, 'keyup');
-        });
+    stick.addEventListener('touchstart', (e) => { stickData.active = true; updateStick(e); });
+    stick.addEventListener('touchmove', (e) => { e.preventDefault(); updateStick(e); });
+    stick.addEventListener('touchend', () => {
+        stickData.active = false;
+        knob.style.transform = `translate(0px, 0px)`;
+        ['w','a','s','d'].forEach(k => { if(activeKeys.has(k)) { sendKey(k, 'keyup'); activeKeys.delete(k); } });
     });
 
-    // 6. Start Button / Fullscreen
+    function updateStick(e) {
+        if (!stickData.active) return;
+        const rect = stick.getBoundingClientRect();
+        const centerX = rect.left + rect.width / 2;
+        const centerY = rect.top + rect.height / 2;
+        const touch = e.touches[0];
+        
+        let dx = touch.clientX - centerX;
+        let dy = touch.clientY - centerY;
+        const dist = Math.sqrt(dx*dx + dy*dy);
+        const maxDist = 50;
+
+        if (dist > maxDist) { dx *= maxDist/dist; dy *= maxDist/dist; }
+        knob.style.transform = `translate(${dx}px, ${dy}px)`;
+
+        // Convert coordinates to WASD
+        const threshold = 15;
+        handleDir('w', dy < -threshold);
+        handleDir('s', dy > threshold);
+        handleDir('a', dx < -threshold);
+        handleDir('d', dx > threshold);
+    }
+
+    function handleDir(key, isPressed) {
+        if (isPressed && !activeKeys.has(key)) {
+            sendKey(key, 'keydown'); activeKeys.add(key);
+        } else if (!isPressed && activeKeys.has(key)) {
+            sendKey(key, 'keyup'); activeKeys.delete(key);
+        }
+    }
+
+    // --- BUTTON LOGIC ---
+    document.querySelectorAll('.btn').forEach(btn => {
+        const k = btn.getAttribute('data-k');
+        btn.addEventListener('touchstart', (e) => { e.preventDefault(); sendKey(k, 'keydown'); });
+        btn.addEventListener('touchend', (e) => { e.preventDefault(); sendKey(k, 'keyup'); });
+    });
+
     document.getElementById('start-btn').addEventListener('click', () => {
         document.getElementById('overlay').style.display = 'none';
-        if (document.documentElement.requestFullscreen) {
-            document.documentElement.requestFullscreen();
-        }
         player.focus();
     });
 </script>
-
 </body>
 </html>
