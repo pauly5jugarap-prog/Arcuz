@@ -71,10 +71,20 @@
 
 <script>
     const ruffle = window.RufflePlayer.newest();
-    const player = ruffle.createPlayer();
-    document.getElementById("ruffle-player").appendChild(player);
-    player.config = { "letterbox": "on", "scale": "showAll", "forceScale": true };
-    player.load("Arcuz.swf");
+const player = ruffle.createPlayer();
+document.getElementById("game-container").appendChild(player);
+
+// Configuration to eliminate black space and center the game
+player.config = {
+    "letterbox": "on",
+    "scale": "showAll",
+    "forceScale": true,
+    "quality": "high",
+    "autoplay": "on",
+    "unmuteOverlay": "hidden"
+};
+
+player.load("Arcuz.swf");
 
     const keyCodes = { 'w':87,'a':65,'s':83,'d':68,'j':74,'k':75,'u':85,'i':73,'1':49,'2':50,'3':51 };
     let activeKeys = new Set();
