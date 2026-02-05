@@ -6,43 +6,56 @@
     <title>Arcuz: Behind the Dark - Analog</title>
     <script src="https://unpkg.com/@ruffle-rs/ruffle"></script>
     <style>
-        * { box-sizing: border-box; touch-action: none; -webkit-user-select: none; user-select: none; }
-        body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: #000; overflow: hidden; position: fixed; }
-        #ruffle-player { width: 100%; height: 100%; position: absolute; }
+    /* Reset and prevent scrolling */
+    * { box-sizing: border-box; touch-action: none; -webkit-user-select: none; user-select: none; }
+    
+    body, html { 
+        margin: 0; padding: 0; width: 100%; height: 100%; 
+        background: #000; overflow: hidden; position: fixed; 
+        display: flex; align-items: center; justify-content: center;
+    }
 
-        /* Joystick Styling */
-        #joystick-container {
-            position: fixed; bottom: 40px; left: 40px;
-            width: 140px; height: 140px;
-            background: rgba(255,255,255,0.1); border-radius: 50%;
-            display: flex; align-items: center; justify-content: center;
-            z-index: 999; pointer-events: auto; border: 2px solid rgba(255,255,255,0.3);
-        }
-        #joystick-knob {
-            width: 60px; height: 60px;
-            background: rgba(255,255,255,0.4); border-radius: 50%;
-            border: 2px solid #fff;
-        }
+    /* Container for the game */
+    #game-container {
+        width: 100vw;
+        height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
 
-        /* Right Side Button Grid */
-        .actions-layer {
-            position: fixed; bottom: 30px; right: 20px;
-            display: flex; flex-direction: column; gap: 10px; align-items: flex-end;
-            z-index: 999; pointer-events: none;
-        }
-        .row { display: flex; gap: 10px; pointer-events: none; }
-        .btn { 
-            width: 55px; height: 55px; background: rgba(255,255,255,0.2); 
-            border: 2px solid #fff; border-radius: 12px; display: flex; 
-            align-items: center; justify-content: center; color: #fff; 
-            pointer-events: auto; font-weight: bold;
-        }
-        .btn:active { background: rgba(255,255,255,0.6); }
-        .atk-btn { width: 80px; height: 80px; border-radius: 50%; background: rgba(231, 76, 60, 0.5); }
+    /* Target the Ruffle element specifically */
+    ruffle-player {
+        width: 100% !important;
+        height: 100% !important;
+        display: block;
+    }
 
-        #overlay { position: fixed; top:0; left:0; width:100%; height:100%; background: #000; z-index: 10000; display: flex; align-items: center; justify-content: center; }
-        #start-btn { padding: 20px 40px; background: #27ae60; color: white; border-radius: 10px; font-size: 20px; border: none; }
-    </style>
+    /* UI Layer for Buttons */
+    .ui-layer { 
+        position: fixed; 
+        bottom: 20px; 
+        width: 100%; 
+        display: flex; 
+        justify-content: space-between; 
+        padding: 0 20px; 
+        pointer-events: none; 
+        z-index: 999; 
+    }
+
+    .btn { 
+        width: 65px; height: 65px; background: rgba(255,255,255,0.2); 
+        border: 2px solid #fff; border-radius: 50%; display: flex; 
+        align-items: center; justify-content: center; color: #fff; 
+        pointer-events: auto; font-weight: bold; font-size: 20px;
+    }
+    .btn:active { background: rgba(255,255,255,0.6); transform: scale(1.1); }
+    .dpad { display: grid; grid-template-columns: repeat(3, 65px); gap: 5px; }
+    .actions { display: flex; gap: 15px; align-items: flex-end; }
+    
+    #overlay { position: fixed; top:0; left:0; width:100%; height:100%; background: #111; z-index: 10000; display: flex; align-items: center; justify-content: center; }
+    #start-btn { padding: 25px 50px; background: #27ae60; color: white; border: none; border-radius: 15px; font-size: 24px; font-weight: bold; }
+</style>
 </head>
 <body>
 
