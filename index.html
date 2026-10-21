@@ -224,11 +224,20 @@ document.addEventListener('DOMContentLoaded', () => {
   // land on the item, so a touch sends a short "glide in" path ending exactly
   // on the finger, then stays still (so tooltips with a delay can appear).
   let glideTimers = [];
+  function sendEnter(x, y) {
+    const t = hoverTarget(); if (!t) return;
+    const init = { clientX: x, clientY: y, screenX: x, screenY: y, bubbles: true, cancelable: true, composed: true, view: window, buttons: 0, button: 0 };
+    const p = Object.assign({ pointerId: 1, pointerType: 'mouse', isPrimary: true }, init);
+    ['pointerover', 'pointerenter'].forEach(n => t.dispatchEvent(new PointerEvent(n, p)));
+    ['mouseover', 'mouseenter'].forEach(n => t.dispatchEvent(new MouseEvent(n, init)));
+  }
   function glideTo(x, y) {
     glideTimers.forEach(clearTimeout); glideTimers = [];
-    const path = [[-14, -10], [-8, -6], [-4, -3], [-2, -1], [1, 1], [0, 0]];
+    sendEnter(x - 40, y - 28);
+    // A slow, human-like approach: 9 small moves over ~0.4 s, ending on the finger.
+    const path = [[-36, -25], [-28, -19], [-20, -13], [-13, -8], [-7, -4], [-3, -2], [-1, -1], [1, 0], [0, 0]];
     path.forEach(([dx, dy], i) => {
-      glideTimers.push(setTimeout(() => sendHover(x + dx, y + dy), i * 35));
+      glideTimers.push(setTimeout(() => sendHover(x + dx, y + dy), 20 + i * 45));
     });
   }
   hoverLayer.addEventListener('pointerdown', e => {
