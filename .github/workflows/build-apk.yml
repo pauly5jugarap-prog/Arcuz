@@ -1,0 +1,53 @@
+name: Build Android APK
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get your files
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Copy the game into a web folder
+        run: |
+          mkdir www
+          cp index.html Arcuz.swf manifest.webmanifest sw.js www/
+          cp -r icons ruffle www/
+
+      - name: Create the Android project (Capacitor)
+        run: |
+          npm init -y
+          npm install @capacitor/core@6 @capacitor/cli@6 @capacitor/android@6
+          npx cap init "Arcuz" com.arcuz.behinddark --web-dir=www
+          npx cap add android
+          npx cap sync android
+
+      - name: Landscape + fullscreen
+        run: |
+          sed -i 's/<activity /<activity android:screenOrientation="sensorLandscape" /' android/app/src/main/AndroidManifest.xml
+          sed -i '/name="AppTheme.NoActionBar"/a\        <item name="android:windowFullscreen">true</item>' android/app/src/main/res/values/styles.xml
+
+      - name: Build the APK
+        working-directory: android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug
+
+      - name: Save the APK so you can download it
+        uses: actions/upload-artifact@v4
+        with:
+          name: Arcuz-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
