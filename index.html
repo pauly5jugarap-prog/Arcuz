@@ -8,7 +8,7 @@
 <link rel="manifest" href="./manifest.webmanifest">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <style>
-:root { color-scheme: dark; --pad: clamp(10px, 2.5vw, 24px); --sm: clamp(36px, 10vh, 52px); --lg: clamp(54px, 15vh, 74px); }
+:root { color-scheme: dark; --pad: clamp(8px, 2vw, 22px); --sm: clamp(46px, 14vh, 68px); --lg: clamp(66px, 21vh, 96px); --stick: clamp(110px, 38vh, 170px); }
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; background: #08090d; }
 body { position: fixed; inset: 0; font-family: system-ui, sans-serif; overscroll-behavior: none; -webkit-touch-callout: none; }
@@ -20,34 +20,36 @@ ruffle-player { display: block; width: 100%; height: 100%; outline: none; }
 #start-btn { min-height: 56px; padding: 14px 28px; border: 2px solid white; border-radius: 12px; background: #219653; color: white; font-size: 18px; font-weight: 800; touch-action: manipulation; }
 #status { max-width: 42rem; color: #e5e7eb; font-size: 14px; line-height: 1.45; overflow-wrap: anywhere; }
 
-#controls { position: fixed; inset: 0; z-index: 20; pointer-events: none; transition: opacity .2s; }
-#controls.faded { opacity: .0; }
+#controls { position: fixed; inset: 0; z-index: 20; pointer-events: none; }
 #controls[hidden], #overlay[hidden] { display: none !important; }
 
-/* Joystick */
-#stick-base { position: absolute; left: max(var(--pad), env(safe-area-inset-left)); bottom: max(var(--pad), env(safe-area-inset-bottom)); width: clamp(94px, 30vh, 130px); height: clamp(94px, 30vh, 130px); border: 2px solid #ffffff70; border-radius: 50%; background: #ffffff1a; display: grid; place-items: center; pointer-events: auto; touch-action: none; }
+/* LEFT SIDE: menu buttons on top, joystick at the bottom (both sit in the black side space) */
+#menu-bar { position: absolute; top: max(var(--pad), env(safe-area-inset-top)); left: max(var(--pad), env(safe-area-inset-left)); display: grid; grid-template-columns: repeat(2, auto); gap: 6px; pointer-events: none; }
+#stick-base { position: absolute; left: max(var(--pad), env(safe-area-inset-left)); bottom: max(var(--pad), env(safe-area-inset-bottom)); width: var(--stick); height: var(--stick); border: 2px solid #ffffff70; border-radius: 50%; background: #ffffff1a; display: grid; place-items: center; pointer-events: auto; touch-action: none; }
 #stick-knob { width: 42%; height: 42%; border: 2px solid #fff; border-radius: 50%; background: #ffffff70; pointer-events: none; }
 
-/* Right-hand button cluster */
-.ui-right { position: absolute; right: max(var(--pad), env(safe-area-inset-right)); bottom: max(var(--pad), env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: 6px; align-items: flex-end; pointer-events: none; }
-.row { display: flex; gap: 6px; pointer-events: none; }
+/* RIGHT SIDE: spells, items, attack / jump */
+.ui-right { position: absolute; right: max(var(--pad), env(safe-area-inset-right)); bottom: max(var(--pad), env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: 8px; align-items: flex-end; pointer-events: none; }
+.row { display: flex; gap: 8px; pointer-events: none; }
+#row-spells { display: grid; grid-template-columns: repeat(2, auto); gap: 8px; }
 
-/* Top menu bar */
-#menu-bar { position: absolute; top: max(8px, env(safe-area-inset-top)); right: max(var(--pad), env(safe-area-inset-right)); display: flex; gap: 6px; pointer-events: none; }
+.btn { width: var(--sm); height: var(--sm); border: 2px solid #ffffffd9; border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1; color: #fff; background: #ffffff30; font: 800 clamp(16px, 4.6vh, 22px) system-ui, sans-serif; pointer-events: auto; touch-action: none; user-select: none; -webkit-user-select: none; padding: 0; }
+.btn small { font-size: clamp(9px, 2.6vh, 12px); font-weight: 600; opacity: .95; margin-top: 3px; }
+.btn.lg { width: var(--lg); height: var(--lg); border-radius: 50%; font-size: clamp(20px, 6vh, 28px); }
+.btn.lg small { font-size: clamp(10px, 3vh, 14px); }
+.btn.menu { width: auto; min-width: clamp(78px, 11vw, 120px); height: clamp(38px, 11vh, 52px); padding: 0 10px; flex-direction: row; gap: 6px; background: #000000a0; border-radius: 10px; font-size: clamp(15px, 4.4vh, 20px); }
+.btn.menu small { font-size: clamp(11px, 3.2vh, 15px); margin: 0; }
+.btn.spell { background: #9b59b6a0; }
+.btn.item  { background: #27ae60a0; }
+.btn[data-k="j"] { background: #e74c3cb0; }
+.btn[data-k="k"] { background: #3498dbb0; }
+.btn.on { filter: brightness(1.5); transform: scale(.94); }
 
-.btn { width: var(--sm); height: var(--sm); border: 2px solid #ffffffd9; border-radius: 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1; color: #fff; background: #ffffff35; font: 800 15px system-ui, sans-serif; pointer-events: auto; touch-action: none; user-select: none; -webkit-user-select: none; padding: 0; }
-.btn small { font-size: 9px; font-weight: 600; opacity: .9; margin-top: 2px; }
-.btn.lg { width: var(--lg); height: var(--lg); border-radius: 50%; font-size: 18px; }
-.btn.lg small { font-size: 11px; }
-.btn.menu { width: auto; min-width: var(--sm); padding: 0 10px; height: clamp(30px, 8vh, 40px); flex-direction: row; gap: 5px; background: #00000066; }
-.btn.menu small { font-size: 11px; margin: 0; }
-.btn.spell { background: #9b59b680; }
-.btn.item  { background: #27ae6080; }
-.btn[data-k="j"] { background: #e74c3c99; }
-.btn[data-k="k"] { background: #3498db99; }
-.btn.on { filter: brightness(1.4); }
-
-@media (orientation: portrait) { #overlay h1 { max-width: 16ch; } }
+/* Ask for landscape on phones */
+#rotate { position: fixed; inset: 0; z-index: 3000; display: none; flex-direction: column; gap: 14px; align-items: center; justify-content: center; background: #08090d; color: #f1c40f; text-align: center; padding: 24px; font-size: 18px; font-weight: 700; }
+#rotate .ico { font-size: 56px; display: inline-block; animation: tilt 1.6s ease-in-out infinite; }
+@keyframes tilt { 0%,100% { transform: rotate(0); } 50% { transform: rotate(-90deg); } }
+@media (orientation: portrait) and (pointer: coarse) { #rotate { display: flex; } }
 </style>
 
 <script>
@@ -176,7 +178,23 @@ document.addEventListener('DOMContentLoaded', () => {
   fill('row-combat', LAYOUT.combat, 'lg');
 
   // ---- load game ----------------------------------------------------
+  const isAndroid = /Android/i.test(navigator.userAgent);
+  function goFullscreenLandscape() {
+    // Must run directly inside the tap, before any await, or the browser refuses.
+    const el = document.documentElement;
+    const req = el.requestFullscreen || el.webkitRequestFullscreen;
+    if (!req) return;
+    Promise.resolve(req.call(el, { navigationUI: 'hide' }))
+      .then(() => {
+        if (screen.orientation && screen.orientation.lock) {
+          return screen.orientation.lock('landscape').catch(() => {});
+        }
+      })
+      .catch(() => {});
+  }
+
   startBtn.addEventListener('click', async () => {
+    goFullscreenLandscape();
     startBtn.disabled = true;
     status.style.color = '#e5e7eb';
     status.textContent = 'Loading Arcuz…';
@@ -202,12 +220,6 @@ document.addEventListener('DOMContentLoaded', () => {
       controls.hidden = false;
       player.focus();
       status.textContent = '';
-      // Fullscreen + landscape + keep screen awake (each is optional / best-effort)
-      if (document.documentElement.requestFullscreen) {
-        document.documentElement.requestFullscreen()
-          .then(() => screen.orientation && screen.orientation.lock && screen.orientation.lock('landscape'))
-          .catch(() => {});
-      }
       if (navigator.wakeLock) navigator.wakeLock.request('screen').catch(() => {});
     } catch (err) {
       console.error('Arcuz load error:', err);
@@ -300,6 +312,8 @@ document.addEventListener('DOMContentLoaded', () => {
   <button id="start-btn" type="button">TAP TO PLAY</button>
   <p id="status" role="status" aria-live="polite">Offline-ready build: first open it online once, then revisit while online so the browser can cache the files for offline use.</p>
 </section>
+
+<div id="rotate"><span class="ico">📱</span>Please rotate your phone to landscape</div>
 
 <div id="controls" hidden>
   <div id="menu-bar"></div>
