@@ -1,0 +1,314 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#08090d">
+<title>Arcuz: Behind the Dark — Offline Mobile</title>
+<link rel="manifest" href="./manifest.webmanifest">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<style>
+:root { color-scheme: dark; --pad: clamp(10px, 2.5vw, 24px); --sm: clamp(36px, 10vh, 52px); --lg: clamp(54px, 15vh, 74px); }
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; background: #08090d; }
+body { position: fixed; inset: 0; font-family: system-ui, sans-serif; overscroll-behavior: none; -webkit-touch-callout: none; }
+#game-container { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; overflow: hidden; background: #000; }
+ruffle-player { display: block; width: 100%; height: 100%; outline: none; }
+
+#overlay { position: fixed; inset: 0; z-index: 1000; display: flex; flex-direction: column; gap: 16px; align-items: center; justify-content: center; padding: 24px; background: radial-gradient(ellipse at center, #202330, #08090d 72%); text-align: center; }
+#overlay h1 { margin: 0; color: #f1c40f; font-size: clamp(20px, 5vw, 34px); line-height: 1.2; }
+#start-btn { min-height: 56px; padding: 14px 28px; border: 2px solid white; border-radius: 12px; background: #219653; color: white; font-size: 18px; font-weight: 800; touch-action: manipulation; }
+#status { max-width: 42rem; color: #e5e7eb; font-size: 14px; line-height: 1.45; overflow-wrap: anywhere; }
+
+#controls { position: fixed; inset: 0; z-index: 20; pointer-events: none; transition: opacity .2s; }
+#controls.faded { opacity: .0; }
+#controls[hidden], #overlay[hidden] { display: none !important; }
+
+/* Joystick */
+#stick-base { position: absolute; left: max(var(--pad), env(safe-area-inset-left)); bottom: max(var(--pad), env(safe-area-inset-bottom)); width: clamp(94px, 30vh, 130px); height: clamp(94px, 30vh, 130px); border: 2px solid #ffffff70; border-radius: 50%; background: #ffffff1a; display: grid; place-items: center; pointer-events: auto; touch-action: none; }
+#stick-knob { width: 42%; height: 42%; border: 2px solid #fff; border-radius: 50%; background: #ffffff70; pointer-events: none; }
+
+/* Right-hand button cluster */
+.ui-right { position: absolute; right: max(var(--pad), env(safe-area-inset-right)); bottom: max(var(--pad), env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: 6px; align-items: flex-end; pointer-events: none; }
+.row { display: flex; gap: 6px; pointer-events: none; }
+
+/* Top menu bar */
+#menu-bar { position: absolute; top: max(8px, env(safe-area-inset-top)); right: max(var(--pad), env(safe-area-inset-right)); display: flex; gap: 6px; pointer-events: none; }
+
+.btn { width: var(--sm); height: var(--sm); border: 2px solid #ffffffd9; border-radius: 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1; color: #fff; background: #ffffff35; font: 800 15px system-ui, sans-serif; pointer-events: auto; touch-action: none; user-select: none; -webkit-user-select: none; padding: 0; }
+.btn small { font-size: 9px; font-weight: 600; opacity: .9; margin-top: 2px; }
+.btn.lg { width: var(--lg); height: var(--lg); border-radius: 50%; font-size: 18px; }
+.btn.lg small { font-size: 11px; }
+.btn.menu { width: auto; min-width: var(--sm); padding: 0 10px; height: clamp(30px, 8vh, 40px); flex-direction: row; gap: 5px; background: #00000066; }
+.btn.menu small { font-size: 11px; margin: 0; }
+.btn.spell { background: #9b59b680; }
+.btn.item  { background: #27ae6080; }
+.btn[data-k="j"] { background: #e74c3c99; }
+.btn[data-k="k"] { background: #3498db99; }
+.btn.on { filter: brightness(1.4); }
+
+@media (orientation: portrait) { #overlay h1 { max-width: 16ch; } }
+</style>
+
+<script>
+// Configure Ruffle before its runtime script loads.
+window.RufflePlayer = window.RufflePlayer || {};
+window.RufflePlayer.config = {
+  autoplay: "off", letterbox: "on", scale: "showAll", forceScale: true,
+  quality: "medium", logLevel: "error", unmuteOverlay: "visible"
+};
+</script>
+<script src="./ruffle/ruffle.js" defer onerror="window.ruffleScriptFailed = true"></script>
+
+<script defer>
+/* =====================================================================
+   BUTTON LAYOUT: edit this section to remap or add buttons.
+   k = keyboard key sent to the game, label = text shown on the button.
+   ===================================================================== */
+const LAYOUT = {
+  // Top bar (menus / windows)
+  menu: [
+    { k: 'v', label: 'Skills' },
+    { k: 'b', label: 'Bag'    },
+    { k: 'c', label: 'Char'   },
+    { k: 'm', label: 'Map'    },
+    { k: 'n', label: 'Quest'  }
+  ],
+  // Bottom-right, top row: spell skills
+  spells: [
+    { k: 'u', label: 'Spell' },
+    { k: 'i', label: 'Spell' },
+    { k: 'o', label: 'Spell' },
+    { k: 'l', label: 'Spell' }
+  ],
+  // Bottom-right, middle row: potions / town portal
+  items: [
+    { k: '1', label: 'Item' },
+    { k: '2', label: 'Item' },
+    { k: '3', label: 'Item' }
+  ],
+  // Bottom-right, bottom row: big action buttons
+  combat: [
+    { k: 'j', label: 'Attack' },
+    { k: 'k', label: 'Jump'   }
+  ]
+};
+// Joystick sends these keys:
+const STICK = { left: 'a', right: 'd', up: 'w', down: 's' };
+/* ===================================================================== */
+
+document.addEventListener('DOMContentLoaded', () => {
+  const container = document.getElementById('game-container');
+  const overlay = document.getElementById('overlay');
+  const startBtn = document.getElementById('start-btn');
+  const status = document.getElementById('status');
+  const controls = document.getElementById('controls');
+  const base = document.getElementById('stick-base');
+  const knob = document.getElementById('stick-knob');
+
+  let player = null;
+  let loaded = false;
+  const held = new Set();
+  const pressedAt = new Map();
+  const activePointers = new Map();
+
+  // ---- key helpers --------------------------------------------------
+  const isDigit = k => /^[0-9]$/.test(k);
+  const codeFor = k => isDigit(k) ? k.charCodeAt(0) : k.toUpperCase().charCodeAt(0);
+  const evCode  = k => isDigit(k) ? 'Digit' + k : 'Key' + k.toUpperCase();
+
+  const allKeys = new Set(Object.values(STICK));
+  Object.values(LAYOUT).forEach(list => list.forEach(b => allKeys.add(b.k)));
+
+  if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1')) {
+    navigator.serviceWorker.register('./sw.js').catch(err => console.warn('Offline caching unavailable:', err));
+  }
+
+  function showError(message) {
+    status.textContent = message;
+    status.style.color = '#ffb4ab';
+    startBtn.disabled = false;
+    startBtn.textContent = 'RETRY';
+  }
+
+  function keyEvent(key, type) {
+    if (!player || !allKeys.has(key)) return;
+    player.dispatchEvent(new KeyboardEvent(type, {
+      key, code: evCode(key), bubbles: true, cancelable: true,
+      keyCode: codeFor(key), which: codeFor(key)
+    }));
+  }
+  function press(key) {
+    if (held.has(key)) return;
+    held.add(key); pressedAt.set(key, performance.now());
+    keyEvent(key, 'keydown');
+  }
+  function release(key) {
+    if (!held.has(key)) return;
+    // Hold every key at least ~60 ms so quick taps (menus, potions) register.
+    const wait = Math.max(0, 60 - (performance.now() - (pressedAt.get(key) || 0)));
+    const doRelease = () => { if (!held.has(key)) return; held.delete(key); keyEvent(key, 'keyup'); };
+    wait ? setTimeout(doRelease, wait) : doRelease();
+  }
+  function releaseAll() {
+    [...held].forEach(release);
+    activePointers.clear();
+    document.querySelectorAll('.btn.on').forEach(b => b.classList.remove('on'));
+    knob.style.transform = 'translate(0,0)';
+  }
+
+  // ---- build buttons from LAYOUT ------------------------------------
+  function makeBtn(def, extraClass) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'btn ' + (extraClass || '');
+    b.dataset.k = def.k;
+    b.innerHTML = '<span>' + def.k.toUpperCase() + '</span><small>' + def.label + '</small>';
+    return b;
+  }
+  function fill(id, list, cls) {
+    const el = document.getElementById(id);
+    list.forEach(def => el.appendChild(makeBtn(def, cls)));
+  }
+  fill('menu-bar', LAYOUT.menu, 'menu');
+  fill('row-spells', LAYOUT.spells, 'spell');
+  fill('row-items', LAYOUT.items, 'item');
+  fill('row-combat', LAYOUT.combat, 'lg');
+
+  // ---- load game ----------------------------------------------------
+  startBtn.addEventListener('click', async () => {
+    startBtn.disabled = true;
+    status.style.color = '#e5e7eb';
+    status.textContent = 'Loading Arcuz…';
+    try {
+      if (!window.RufflePlayer || typeof window.RufflePlayer.newest !== 'function') {
+        throw new Error(window.ruffleScriptFailed ? 'Offline Ruffle runtime not found. Add the official Ruffle web package files to the ./ruffle/ folder, including ruffle.js and its WASM file.' : 'Ruffle is not ready yet. Please retry in a moment.');
+      }
+      if (!player) {
+        player = window.RufflePlayer.newest().createPlayer();
+        player.setAttribute('aria-label', 'Arcuz Flash game');
+        player.tabIndex = 0;
+        player.style.width = '100%';
+        player.style.height = '100%';
+        player.config = window.RufflePlayer.config;
+        container.appendChild(player);
+      }
+      if (!loaded) {
+        await player.load({ url: new URL('./Arcuz.swf', document.baseURI).href });
+        loaded = true;
+      }
+      try { await player.play(); } catch (_) {}
+      overlay.hidden = true;
+      controls.hidden = false;
+      player.focus();
+      status.textContent = '';
+      // Fullscreen + landscape + keep screen awake (each is optional / best-effort)
+      if (document.documentElement.requestFullscreen) {
+        document.documentElement.requestFullscreen()
+          .then(() => screen.orientation && screen.orientation.lock && screen.orientation.lock('landscape'))
+          .catch(() => {});
+      }
+      if (navigator.wakeLock) navigator.wakeLock.request('screen').catch(() => {});
+    } catch (err) {
+      console.error('Arcuz load error:', err);
+      showError('Could not load Arcuz.swf. Make sure Arcuz.swf is beside index.html and the local Ruffle runtime is in ./ruffle/. Details: ' + (err && err.message ? err.message : String(err)));
+    }
+  });
+
+  // Re-acquire wake lock when returning to the tab
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) releaseAll();
+    else if (!controls.hidden && navigator.wakeLock) navigator.wakeLock.request('screen').catch(() => {});
+  });
+
+  // ---- touch buttons ------------------------------------------------
+  document.querySelectorAll('.btn').forEach(btn => {
+    const key = btn.dataset.k;
+    btn.addEventListener('pointerdown', e => {
+      e.preventDefault();
+      try { btn.setPointerCapture(e.pointerId); } catch (_) {}
+      activePointers.set(e.pointerId, key);
+      press(key);
+      btn.classList.add('on');
+      if (navigator.vibrate) navigator.vibrate(8);
+    });
+    const finish = e => {
+      if (activePointers.has(e.pointerId)) {
+        const k = activePointers.get(e.pointerId);
+        activePointers.delete(e.pointerId);
+        release(k);
+      }
+      btn.classList.remove('on');
+    };
+    btn.addEventListener('pointerup', finish);
+    btn.addEventListener('pointercancel', finish);
+    btn.addEventListener('lostpointercapture', finish);
+    btn.addEventListener('contextmenu', e => e.preventDefault());
+  });
+
+  // ---- joystick -----------------------------------------------------
+  let stickPointer = null;
+  function moveStick(e) {
+    const rect = base.getBoundingClientRect();
+    let dx = e.clientX - (rect.left + rect.width / 2);
+    let dy = e.clientY - (rect.top + rect.height / 2);
+    const max = rect.width * 0.33;
+    const dist = Math.hypot(dx, dy);
+    if (dist > max) { dx *= max / dist; dy *= max / dist; }
+    knob.style.transform = `translate(${dx}px, ${dy}px)`;
+    const dead = 12;
+    [[STICK.left, dx < -dead], [STICK.right, dx > dead], [STICK.up, dy < -dead], [STICK.down, dy > dead]]
+      .forEach(([k, down]) => down ? press(k) : release(k));
+  }
+  base.addEventListener('pointerdown', e => {
+    e.preventDefault();
+    if (stickPointer !== null) return;
+    stickPointer = e.pointerId;
+    try { base.setPointerCapture(e.pointerId); } catch (_) {}
+    moveStick(e);
+  });
+  base.addEventListener('pointermove', e => { if (e.pointerId === stickPointer) { e.preventDefault(); moveStick(e); } });
+  function endStick(e) {
+    if (e.pointerId !== stickPointer) return;
+    stickPointer = null;
+    Object.values(STICK).forEach(release);
+    knob.style.transform = 'translate(0,0)';
+  }
+  base.addEventListener('pointerup', endStick);
+  base.addEventListener('pointercancel', endStick);
+  base.addEventListener('lostpointercapture', endStick);
+
+  // ---- physical keyboard (desktop testing) --------------------------
+  window.addEventListener('keydown', e => {
+    const k = e.key.length === 1 ? e.key.toLowerCase() : '';
+    if (allKeys.has(k)) { e.preventDefault(); press(k); }
+  });
+  window.addEventListener('keyup', e => {
+    const k = e.key.length === 1 ? e.key.toLowerCase() : '';
+    if (allKeys.has(k)) { e.preventDefault(); release(k); }
+  });
+  window.addEventListener('blur', releaseAll);
+  window.addEventListener('contextmenu', e => e.preventDefault());
+});
+</script>
+</head>
+<body>
+<main id="game-container" aria-label="Arcuz game area"></main>
+
+<section id="overlay">
+  <h1>ARCUZ: BEHIND THE DARK</h1>
+  <button id="start-btn" type="button">TAP TO PLAY</button>
+  <p id="status" role="status" aria-live="polite">Offline-ready build: first open it online once, then revisit while online so the browser can cache the files for offline use.</p>
+</section>
+
+<div id="controls" hidden>
+  <div id="menu-bar"></div>
+  <div id="stick-base" aria-label="Movement joystick"><div id="stick-knob"></div></div>
+  <div class="ui-right">
+    <div class="row" id="row-spells"></div>
+    <div class="row" id="row-items"></div>
+    <div class="row" id="row-combat"></div>
+  </div>
+</div>
+</body>
+</html>
