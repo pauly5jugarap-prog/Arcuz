@@ -219,10 +219,22 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!infoOn) sendLeave();
     if (navigator.vibrate) navigator.vibrate(8);
   });
-  const hoverMove = e => { e.preventDefault(); sendHover(e.clientX, e.clientY); };
+  const hoverMove = e => { e.preventDefault(); glideTimers.forEach(clearTimeout); glideTimers = []; sendHover(e.clientX, e.clientY); };
+  // Many Flash games only show a tooltip after a few real mouse-move events
+  // land on the item, so a touch sends a short "glide in" path ending exactly
+  // on the finger, then stays still (so tooltips with a delay can appear).
+  let glideTimers = [];
+  function glideTo(x, y) {
+    glideTimers.forEach(clearTimeout); glideTimers = [];
+    const path = [[-14, -10], [-8, -6], [-4, -3], [-2, -1], [1, 1], [0, 0]];
+    path.forEach(([dx, dy], i) => {
+      glideTimers.push(setTimeout(() => sendHover(x + dx, y + dy), i * 35));
+    });
+  }
   hoverLayer.addEventListener('pointerdown', e => {
+    e.preventDefault();
     try { hoverLayer.setPointerCapture(e.pointerId); } catch (_) {}
-    hoverMove(e);
+    glideTo(e.clientX, e.clientY);
   });
   hoverLayer.addEventListener('pointermove', hoverMove);
   hoverLayer.addEventListener('contextmenu', e => e.preventDefault());

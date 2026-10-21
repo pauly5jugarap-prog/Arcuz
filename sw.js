@@ -1,6 +1,6 @@
 // Arcuz service worker: offline caching for the Ruffle-hosted SWF game.
 // Bump CACHE_VERSION whenever you change Arcuz.swf, index.html or the ruffle/ files.
-const CACHE_VERSION = 'arcuz-v4';
+const CACHE_VERSION = 'arcuz-v5';
 
 // Core files cached on install. Anything else (Ruffle's .wasm and chunk
 // files, etc.) is cached automatically the first time it is requested.
