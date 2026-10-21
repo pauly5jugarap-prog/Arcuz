@@ -48,9 +48,6 @@ ruffle-player { display: block; width: 100%; height: 100%; outline: none; }
 /* Info (hover) mode */
 #hover-layer { position: fixed; inset: 0; z-index: 10; touch-action: none; background: transparent; }
 #hover-layer[hidden] { display: none; }
-#info-hint { position: fixed; top: max(8px, env(safe-area-inset-top)); left: 50%; transform: translateX(-50%); z-index: 30; padding: 6px 14px; background: #000c; color: #f1c40f; border: 1px solid #f1c40f; border-radius: 8px; font: 700 clamp(11px, 3.4vh, 15px) system-ui, sans-serif; pointer-events: none; white-space: nowrap; }
-#info-hint[hidden] { display: none; }
-.btn.info.active { background: #f1c40f; color: #000; border-color: #fff; }
 
 /* Ask for landscape on phones */
 #rotate { position: fixed; inset: 0; z-index: 3000; display: none; flex-direction: column; gap: 14px; align-items: center; justify-content: center; background: #08090d; color: #f1c40f; text-align: center; padding: 24px; font-size: 18px; font-weight: 700; }
@@ -185,68 +182,87 @@ document.addEventListener('DOMContentLoaded', () => {
   fill('row-combat', LAYOUT.combat, 'lg');
 
 
-  // ---- INFO mode: touch screens have no "hover", so this sends mouse-move
-  // events to the game while you drag a finger over it (shows item descriptions).
+  // ---- TOUCH = MOUSE ------------------------------------------------
+  // A touch screen has no "hover", but the game shows item descriptions on hover.
+  // This layer turns finger gestures into mouse actions for the game:
+  //   quick tap          -> normal click
+  //   hold / drag finger -> hover only (item description shows, nothing is clicked)
   const hoverLayer = document.getElementById('hover-layer');
-  const infoHint = document.getElementById('info-hint');
-  const infoBtn = document.createElement('button');
-  infoBtn.type = 'button';
-  infoBtn.className = 'btn menu info';
-  infoBtn.innerHTML = '<span>\uD83D\uDC46</span><small>Info</small>';
-  document.getElementById('menu-bar').appendChild(infoBtn);
-  let infoOn = false;
+  const TAP_MS = 300, TAP_MOVE_PX = 12;
 
   function hoverTarget() {
     return (player && player.shadowRoot && player.shadowRoot.querySelector('canvas')) || player;
   }
+  function baseInit(x, y, buttons) {
+    return { clientX: x, clientY: y, screenX: x, screenY: y, bubbles: true, cancelable: true, composed: true, view: window, buttons: buttons, button: 0 };
+  }
+  const ptr = { pointerId: 1, pointerType: 'mouse', isPrimary: true };
   function sendHover(x, y) {
     const t = hoverTarget(); if (!t) return;
-    const init = { clientX: x, clientY: y, screenX: x, screenY: y, bubbles: true, cancelable: true, composed: true, view: window, buttons: 0, button: 0 };
-    t.dispatchEvent(new PointerEvent('pointermove', Object.assign({ pointerId: 1, pointerType: 'mouse', isPrimary: true }, init)));
+    const init = baseInit(x, y, 0);
+    t.dispatchEvent(new PointerEvent('pointermove', Object.assign({}, ptr, init)));
     t.dispatchEvent(new MouseEvent('mousemove', init));
   }
-  function sendLeave() {
-    const t = hoverTarget(); if (!t) return;
-    t.dispatchEvent(new PointerEvent('pointerleave', { pointerId: 1, pointerType: 'mouse', isPrimary: true, bubbles: false }));
-    t.dispatchEvent(new MouseEvent('mouseleave', { bubbles: false }));
-  }
-  infoBtn.addEventListener('pointerdown', e => {
-    e.preventDefault();
-    infoOn = !infoOn;
-    infoBtn.classList.toggle('active', infoOn);
-    hoverLayer.hidden = !infoOn;
-    infoHint.hidden = !infoOn;
-    if (!infoOn) sendLeave();
-    if (navigator.vibrate) navigator.vibrate(8);
-  });
-  const hoverMove = e => { e.preventDefault(); glideTimers.forEach(clearTimeout); glideTimers = []; sendHover(e.clientX, e.clientY); };
-  // Many Flash games only show a tooltip after a few real mouse-move events
-  // land on the item, so a touch sends a short "glide in" path ending exactly
-  // on the finger, then stays still (so tooltips with a delay can appear).
-  let glideTimers = [];
   function sendEnter(x, y) {
     const t = hoverTarget(); if (!t) return;
-    const init = { clientX: x, clientY: y, screenX: x, screenY: y, bubbles: true, cancelable: true, composed: true, view: window, buttons: 0, button: 0 };
-    const p = Object.assign({ pointerId: 1, pointerType: 'mouse', isPrimary: true }, init);
-    ['pointerover', 'pointerenter'].forEach(n => t.dispatchEvent(new PointerEvent(n, p)));
+    const init = baseInit(x, y, 0);
+    ['pointerover', 'pointerenter'].forEach(n => t.dispatchEvent(new PointerEvent(n, Object.assign({}, ptr, init))));
     ['mouseover', 'mouseenter'].forEach(n => t.dispatchEvent(new MouseEvent(n, init)));
   }
+  function sendButton(down, x, y) {
+    const t = hoverTarget(); if (!t) return;
+    const init = baseInit(x, y, down ? 1 : 0);
+    t.dispatchEvent(new PointerEvent(down ? 'pointerdown' : 'pointerup', Object.assign({ detail: 1 }, ptr, init)));
+    t.dispatchEvent(new MouseEvent(down ? 'mousedown' : 'mouseup', Object.assign({ detail: 1 }, init)));
+  }
+
+  let glideTimers = [];
+  function clearGlide() { glideTimers.forEach(clearTimeout); glideTimers = []; }
   function glideTo(x, y) {
-    glideTimers.forEach(clearTimeout); glideTimers = [];
+    clearGlide();
     sendEnter(x - 40, y - 28);
-    // A slow, human-like approach: 9 small moves over ~0.4 s, ending on the finger.
+    // Slow, human-like approach ending on the finger so tooltips trigger.
     const path = [[-36, -25], [-28, -19], [-20, -13], [-13, -8], [-7, -4], [-3, -2], [-1, -1], [1, 0], [0, 0]];
     path.forEach(([dx, dy], i) => {
       glideTimers.push(setTimeout(() => sendHover(x + dx, y + dy), 20 + i * 45));
     });
   }
+
+  let gesture = null;
   hoverLayer.addEventListener('pointerdown', e => {
     e.preventDefault();
+    if (e.pointerType === 'mouse') { sendHover(e.clientX, e.clientY); sendButton(true, e.clientX, e.clientY); return; }
+    if (gesture) return; // ignore a second finger
     try { hoverLayer.setPointerCapture(e.pointerId); } catch (_) {}
+    gesture = { id: e.pointerId, x: e.clientX, y: e.clientY, t: performance.now(), moved: false };
     glideTo(e.clientX, e.clientY);
   });
-  hoverLayer.addEventListener('pointermove', hoverMove);
+  hoverLayer.addEventListener('pointermove', e => {
+    e.preventDefault();
+    if (e.pointerType === 'mouse') { sendHover(e.clientX, e.clientY); return; }
+    if (!gesture || e.pointerId !== gesture.id) return;
+    if (!gesture.moved && Math.hypot(e.clientX - gesture.x, e.clientY - gesture.y) > TAP_MOVE_PX) {
+      gesture.moved = true; clearGlide();
+    }
+    if (gesture.moved) sendHover(e.clientX, e.clientY);
+  });
+  hoverLayer.addEventListener('pointerup', e => {
+    e.preventDefault();
+    if (e.pointerType === 'mouse') { sendButton(false, e.clientX, e.clientY); return; }
+    if (!gesture || e.pointerId !== gesture.id) return;
+    const g = gesture; gesture = null;
+    clearGlide();
+    if (!g.moved && performance.now() - g.t < TAP_MS) {
+      // Quick tap: hover the spot, then click it.
+      sendHover(g.x, g.y);
+      setTimeout(() => sendButton(true, g.x, g.y), 30);
+      setTimeout(() => sendButton(false, g.x, g.y), 100);
+    }
+    // Otherwise it was a hold/drag: leave the pointer resting there so the description stays.
+  });
+  hoverLayer.addEventListener('pointercancel', () => { gesture = null; clearGlide(); });
   hoverLayer.addEventListener('contextmenu', e => e.preventDefault());
+
 
   // ---- load game ----------------------------------------------------
   const isAndroid = /Android/i.test(navigator.userAgent);
@@ -289,6 +305,7 @@ document.addEventListener('DOMContentLoaded', () => {
       try { await player.play(); } catch (_) {}
       overlay.hidden = true;
       controls.hidden = false;
+      hoverLayer.hidden = false;
       player.focus();
       status.textContent = '';
       if (navigator.wakeLock) navigator.wakeLock.request('screen').catch(() => {});
@@ -385,7 +402,6 @@ document.addEventListener('DOMContentLoaded', () => {
 </section>
 
 <div id="hover-layer" hidden></div>
-<div id="info-hint" hidden>INFO mode: touch an item to see its description</div>
 
 <div id="rotate"><span class="ico">📱</span>Please rotate your phone to landscape</div>
 
