@@ -49,10 +49,6 @@ ruffle-player { display: block; width: 100%; height: 100%; outline: none; }
 #hover-layer { position: fixed; inset: 0; z-index: 10; touch-action: none; background: transparent; }
 #hover-layer[hidden] { display: none; }
 
-/* Cover-up strips that hide parts of the game's own HUD (see HIDE_ZONES) */
-.hide-zone { position: fixed; z-index: 5; pointer-events: none; background: #1a140e; }
-body.calibrate .hide-zone { background: rgba(255, 0, 0, .35); outline: 2px solid red; }
-
 /* Ask for landscape on phones */
 #rotate { position: fixed; inset: 0; z-index: 3000; display: none; flex-direction: column; gap: 14px; align-items: center; justify-content: center; background: #08090d; color: #f1c40f; text-align: center; padding: 24px; font-size: 18px; font-weight: 700; }
 #rotate .ico { font-size: 56px; display: inline-block; animation: tilt 1.6s ease-in-out infinite; }
@@ -103,18 +99,6 @@ const LAYOUT = {
     { k: 'k', label: 'Jump'   }
   ]
 };
-// Parts of the game's own screen to cover up (its bottom button row: CHAR, SKILL,
-// INV, QUESTS, MAP) because we already have touch buttons for them.
-// x, y, w, h are fractions (0 to 1) of the game screen itself. The MENU button on
-// the right of that row is left uncovered so the player can still open the game menu.
-// To check or adjust the position, open the web page with  #calibrate  on the end
-// of the link; the strip turns red and see-through.
-const HIDE_ZONES = [
-  { x: 0.17, y: 0.884, w: 0.567, h: 0.051 }
-];
-const ZONE_COLOR = '#1a140e';        // colour of the cover strip
-const STAGE_ASPECT = 728 / 659;      // game screen width / height (used if Ruffle can't tell)
-
 // Joystick sends these keys:
 const STICK = { left: 'a', right: 'd', up: 'w', down: 's' };
 /* ===================================================================== */
@@ -244,44 +228,9 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // ---- cover-up strips over the game's own bottom buttons ------------
-  if (location.hash === '#calibrate') document.body.classList.add('calibrate');
-  let zoneEls = [];
-  let zoneRects = [];
-  function stageRect() {
-    const vw = window.innerWidth, vh = window.innerHeight;
-    let a = STAGE_ASPECT;
-    const m = player && player.metadata;
-    if (m && m.width && m.height) a = m.width / m.height;
-    let w, hh;
-    if (vw / vh > a) { hh = vh; w = vh * a; } else { w = vw; hh = vw / a; }
-    return { x: (vw - w) / 2, y: (vh - hh) / 2, w: w, h: hh };
-  }
-  function layoutZones() {
-    const s = stageRect();
-    zoneRects = HIDE_ZONES.map(z => ({ x: s.x + z.x * s.w, y: s.y + z.y * s.h, w: z.w * s.w, h: z.h * s.h }));
-    while (zoneEls.length < zoneRects.length) {
-      const d = document.createElement('div');
-      d.className = 'hide-zone';
-      d.style.background = ZONE_COLOR;
-      document.body.appendChild(d);
-      zoneEls.push(d);
-    }
-    zoneRects.forEach((r, i) => {
-      const d = zoneEls[i];
-      d.style.left = r.x + 'px'; d.style.top = r.y + 'px';
-      d.style.width = r.w + 'px'; d.style.height = r.h + 'px';
-    });
-  }
-  function inZone(x, y) {
-    return zoneRects.some(r => x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h);
-  }
-  ['resize', 'orientationchange', 'fullscreenchange'].forEach(ev => window.addEventListener(ev, () => setTimeout(layoutZones, 150)));
-
   let gesture = null;
   hoverLayer.addEventListener('pointerdown', e => {
     e.preventDefault();
-    if (inZone(e.clientX, e.clientY)) return;
     if (e.pointerType === 'mouse') { sendHover(e.clientX, e.clientY); sendButton(true, e.clientX, e.clientY); return; }
     if (gesture) return; // ignore a second finger
     try { hoverLayer.setPointerCapture(e.pointerId); } catch (_) {}
@@ -299,7 +248,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
   hoverLayer.addEventListener('pointerup', e => {
     e.preventDefault();
-    if (e.pointerType === 'mouse') { if (!inZone(e.clientX, e.clientY)) sendButton(false, e.clientX, e.clientY); return; }
+    if (e.pointerType === 'mouse') { sendButton(false, e.clientX, e.clientY); return; }
     if (!gesture || e.pointerId !== gesture.id) return;
     const g = gesture; gesture = null;
     clearGlide();
@@ -357,9 +306,6 @@ document.addEventListener('DOMContentLoaded', () => {
       overlay.hidden = true;
       controls.hidden = false;
       hoverLayer.hidden = false;
-      layoutZones();
-      setTimeout(layoutZones, 600);
-      setTimeout(layoutZones, 2000);
       player.focus();
       status.textContent = '';
       if (navigator.wakeLock) navigator.wakeLock.request('screen').catch(() => {});
